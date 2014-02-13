@@ -4,11 +4,6 @@ var mongoose = require('mongoose');
 var gunziplib = require('zlib');
 mongoose.connect('mongodb://admin:pass@troup.mongohq.com:10023/animedb');
 
-var arUsers = [{
-  id: 1111
-}, {
-  id: 2222
-}];
 var page = 0;
 var User = {};
 
@@ -114,5 +109,12 @@ function sendRequestUser() {
   http.request(options, getHtmlUser).end();
 }
 
-User = arUsers.shift()
-sendRequest();
+
+animedb_user_list.find({
+  d: false
+}).exec(function(err, docs) {
+  console.log('list q - ok')
+  arUsers = docs;
+  User = arUsers.shift()
+  sendRequest();
+});
