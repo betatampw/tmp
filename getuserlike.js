@@ -29,15 +29,20 @@ function getHtml(response) {
     html += chunk;
   });
   gunzip.on('end', function() {
-    console.log('GET USER ' + User.id + ' LIKE PAGE ' + page + ' - COMPLETED')
+
+    error = /<div.*?g_msg g_bubble error.*?>([\s\S]*?)<\/div>/i.exec(html);
+    if (error) {
+      if (!/ACCESS DENIED/i.exec(error[1])) {
+        throw new Error(error[1]);
+      }
+    }
+
     reg = /<tr[\s\S]*?<\/tr>/ig
     res = html.match(reg)
     tmp = false;
     if (res) {
-      console.log('USER ' + User.id + ' HAVE LIKES')
       for (var i = res.length - 1; i >= 0; i--) {
         id = /".*?aid=(.*?)"/.exec(res[i]);
-
         if (id) {
           ar = /<td class="vote(?! my).*?>([0-9\.]*?)<\/td>/.exec(res[i]);
           if (id[1] && ar[1]) {
@@ -45,29 +50,20 @@ function getHtml(response) {
           }
         }
       };
-
-
       if (!/<ul class="g_list jump">[\s\S]*?next(?= selected)[\s\S]*?<\/ul>/i.test(html)) { // next page?
-        console.log('GET USER NEXT PAGE LIKES')
         page = page + 1;
-        setTimeout(sendRequest, 3000)
+        setTimeout(sendRequest, 5014)
       } else {
-        console.log('GET USER ' + User.id + ' LIKES DOWNLOAD')
-        sendRequestUser()
+        setTimeout(sendRequestUser, 4154)
       }
+
     } else {
-      console.log('USER ' + User.id + ' HAVE 0 LIKES REMOVE')
+
+      console.log('U' + User.id + ' REMOVE')
       User.remove();
       page = 0;
-      User = arUsers.shift();
-      if (User) {
-        User['likes'] = {};
-        console.log("GET NEXT USER");
-        console.log("------------- REMAINING " + arUsers.length + " --------------");
-        setTimeout(sendRequest, 6666)
-      } else {
-        console.log("######################   ALL USER DOWNLOAD   ######################")
-      }
+      getNextUser();
+
     };
   });
 }
@@ -80,33 +76,28 @@ function getHtmlUser(response) {
     html += chunk;
   });
   gunzip.on('end', function() {
-    console.log('GET USER ' + User.id + ' INFO - COMPLETED')
+    error = /<div.*?g_msg g_bubble error.*?>([\s\S]*?)<\/div>/i.exec(html);
+    if (error) {
+      if (!/ACCESS DENIED/i.exec(error[1])) {
+        throw new Error(error[1]);
+      }
+    }
+
     reg = /tr.*?gender[\s\S]*?<td class="value">(.*?)<\/td>[\s\S]*?<\/tr>/i
     res = html.match(reg)
     if (res) {
-      console.log('GET USER ' + User.id + ' HAVE GENDER')
       User.gender = res[1]
     }
     reg = /tr.*?birthday[\s\S]*?<td class="value">.*?([0-9]{2})\.([0-9]{2})\.([0-9]{4}).*?<\/td>[\s\S]*?<\/tr>/i
     res = html.match(reg)
     if (res) {
-      console.log('GET USER ' + User.id + ' HAVE DATE')
       User.date = new Date(res[3], res[2], res[1])
     }
     User.d = true;
     User.save();
-    console.log('GET USER ' + User.id + ' SAVE')
+    console.log('U ' + User.id + ' SAVE')
     page = 0;
-    User = arUsers.shift();
-    if (User) {
-      User['likes'] = {};
-      console.log("GET NEXT USER");
-      console.log("------------- REMAINING " + arUsers.length + " --------------");
-      setTimeout(sendRequest, 6666)
-    } else {
-      console.log("######################   ALL USER DOWNLOAD   ######################")
-    }
-
+    getNextUser();
   });
 }
 
@@ -120,12 +111,11 @@ function sendRequest() {
       'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
       'Accept-Encoding': 'gzip, deflate',
       'Referer': 'http://anidb.net/perl-bin/animedb.pl',
-      'Cookie': 'default_tabs=anime%3Atab_main_1; adbuin=1391335061-tMcM; anidbsettings=%7B%22USEAJAX%22%3A1%7D; adbsess=fYNfFXhwhTOISpFY; adbss=618704-fYNfFXhw; adbsessuser=batatampa; adbautouser=batatampa; adbautopass=CtzOSjRgEuGHTwgi',
+      'Cookie': 'default_tabs=profile%3Atab_7; adbuin=1391335061-tMcM; anidbsettings=%7B%22USEAJAX%22%3A1%7D; adbsess=wFuDWrsLpvHTDrLj; adbss=618704-wFuDWrsL; adbsessuser=batatampa; adbautouser=batatampa; adbautopass=YfdhHlpbEVvfCWsX',
       'Cache-Control': 'no-cache',
       'Connection': 'Keep-Alive',
     }
   }
-  console.log('GET USER ' + User.id + ' LIKE PAGE ' + page)
   http.request(options, getHtml).end();
 }
 
@@ -139,28 +129,33 @@ function sendRequestUser() {
       'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
       'Accept-Encoding': 'gzip, deflate',
       'Referer': 'http://anidb.net/perl-bin/animedb.pl',
-      'Cookie': 'default_tabs=anime%3Atab_main_1; adbuin=1391335061-tMcM; anidbsettings=%7B%22USEAJAX%22%3A1%7D; adbsess=fYNfFXhwhTOISpFY; adbss=618704-fYNfFXhw; adbsessuser=batatampa; adbautouser=batatampa; adbautopass=CtzOSjRgEuGHTwgi',
+      'Cookie': 'default_tabs=profile%3Atab_7; adbuin=1391335061-tMcM; anidbsettings=%7B%22USEAJAX%22%3A1%7D; adbsess=wFuDWrsLpvHTDrLj; adbss=618704-wFuDWrsL; adbsessuser=batatampa; adbautouser=batatampa; adbautopass=YfdhHlpbEVvfCWsX',
       'Cache-Control': 'no-cache',
       'Connection': 'Keep-Alive',
     }
   }
-  console.log('GET USER ' + User.id + ' INFO')
   http.request(options, getHtmlUser).end();
 }
 
-console.log('GET USER LIST ')
+function getNextUser() {
+  User = arUsers.shift()
+  if (User) {
+    User['likes'] = {};
+    console.log("-- REMAIN " + arUsers.length + " --");
+    setTimeout(sendRequest, 10201)
+  } else {
+    console.log("##################################################################   ALL USER DOWNLOAD   ##################################################################")
+  }
+}
+
+
+
+console.log('## START ##')
 animedb_user_list.find({
   d: false
 }).sort({
   page: 1
 }).exec(function(err, docs) {
-  console.log('GET USER LIST - COMPLETED')
   arUsers = docs;
-  User = arUsers.shift()
-  if (User) {
-    User['likes'] = {};
-    sendRequest();
-  } else {
-    console.log("######################   ALL USER DOWNLOAD   ######################")
-  }
+  getNextUser();
 });
