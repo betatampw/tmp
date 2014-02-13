@@ -5,15 +5,19 @@ var gunziplib = require('zlib');
 mongoose.connect('mongodb://admin:pass@troup.mongohq.com:10023/animedb');
 
 var page = 0;
-var User = {};
+var arUsers = [{
+  id: 111,
+  likes: {}
+}]
+var user = {};
 
 var animedb_user_list = mongoose.model('animedb_user_list', {
   id: Number,
   d: Boolean,
-  gender: Number,
+  gender: String,
   date: Date,
   acount: Number,
-  p: Number.
+  p: Number,
   likes: {}
 });
 
@@ -25,32 +29,50 @@ function getHtml(response) {
     html += chunk;
   });
   gunzip.on('end', function() {
-
+    console.log('GET USER ' + User.id + ' LIKE PAGE ' + page + ' - COMPLETED')
     reg = /<tr[\s\S]*?<\/tr>/ig
     res = html.match(reg)
     tmp = false;
     if (res) {
+      console.log('USER ' + User.id + ' HAVE LIKES')
       for (var i = res.length - 1; i >= 0; i--) {
         id = /".*?aid=(.*?)"/.exec(res[i]);
+
         if (id) {
           ar = /<td class="vote(?! my).*?>([0-9\.]*?)<\/td>/.exec(res[i]);
-          User.likes[id[1]] = Math.round(ar[1]);
+          if (id[1] && ar[1]) {
+            User.likes[id[1]] = Math.round(ar[1]);
+          }
         }
       };
-      if (true) { // next page?
+
+
+      if (!/<ul class="g_list jump">[\s\S]*?next(?= selected)[\s\S]*?<\/ul>/i.test(html)) { // next page?
+        console.log('GET USER NEXT PAGE LIKES')
         page = page + 1;
         setTimeout(sendRequest, 1000)
       } else {
+        console.log('GET USER ' + User.id + ' LIKES DOWNLOAD')
         sendRequestUser()
       }
     } else {
-      //DEL HIM
-      console.log("user has no likes DEL HIM")
+      console.log('USER ' + User.id + ' HAVE 0 LIKES REMOVE')
+      User.remove();
+      page = 0;
+      User = arUsers.shift();
+      if (User) {
+        User['likes'] = {};
+        console.log("GET NEXT USER");
+        console.log("------------- REMAINING " + arUsers.length + " --------------");
+        setTimeout(sendRequest, 3000)
+      } else {
+        console.log("######################   ALL USER DOWNLOAD   ######################")
+      }
     };
   });
 }
 
-function getHtml(response) {
+function getHtmlUser(response) {
   var html = '';
   gunzip = gunziplib.createGunzip();
   response.pipe(gunzip);
@@ -58,23 +80,40 @@ function getHtml(response) {
     html += chunk;
   });
   gunzip.on('end', function() {
-    // get gender
-    // get date
-    // set d
-    // save user
-    // next user 
+    console.log('GET USER ' + User.id + ' INFO - COMPLETED')
+    reg = /tr.*?gender[\s\S]*?<td class="value">(.*?)<\/td>[\s\S]*?<\/tr>/i
+    res = html.match(reg)
+    if (res) {
+      console.log('GET USER ' + User.id + ' HAVE GENDER')
+      User.gender = res[1]
+    }
+    reg = /tr.*?birthday[\s\S]*?<td class="value">.*?([0-9]{2})\.([0-9]{2})\.([0-9]{4}).*?<\/td>[\s\S]*?<\/tr>/i
+    res = html.match(reg)
+    if (res) {
+      console.log('GET USER ' + User.id + ' HAVE DATE')
+      User.date = new Date(res[3], res[2], res[1])
+    }
+    User.d = true;
+    User.save();
+    console.log('GET USER ' + User.id + ' SAVE')
     page = 0;
     User = arUsers.shift();
-    setTimeout(sendRequest, 3000)
+    if (User) {
+      User['likes'] = {};
+      console.log("GET NEXT USER");
+      console.log("------------- REMAINING " + arUsers.length + " --------------");
+      setTimeout(sendRequest, 3000)
+    } else {
+      console.log("######################   ALL USER DOWNLOAD   ######################")
+    }
+
   });
 }
 
 function sendRequest() {
   options = {
-    hostname: 'test.net-brand.ru',
-    path: '/voit.html?uid=' + User.id + '&show=myvotes&do=anime&epp=250&page=' + page,
-    //hostname: 'anidb.net',
-    //path: '/perl-bin/animedb.pl?show=userlist&orderby.user=1.1&orderby.acnt=0.2&page=' + page,
+    hostname: 'anidb.net',
+    path: '/perl-bin/animedb.pl?uid=' + User.id + '&show=myvotes&do=anime&epp=250&page=' + page,
     headers: {
       'User-Agent': 'Opera/9.80 (Windows NT 6.2; WOW64) Presto/2.12.388 Version/12.16',
       'Accept': 'text/html, application/xml;q=0.9, application/xhtml+xml, image/png, image/webp, image/jpeg, image/gif, image/x-xbitmap, */*;q=0.1',
@@ -86,15 +125,14 @@ function sendRequest() {
       'Connection': 'Keep-Alive',
     }
   }
+  console.log('GET USER ' + User.id + ' LIKE PAGE ' + page)
   http.request(options, getHtml).end();
 }
 
 function sendRequestUser() {
   options = {
-    hostname: 'test.net-brand.ru',
-    path: '/voit.html?uid=' + User.id + '&show=myvotes&do=anime&epp=250&page=' + page, // TODO
-    //hostname: 'anidb.net',
-    //path: '/perl-bin/animedb.pl?show=userlist&orderby.user=1.1&orderby.acnt=0.2&page=' + page,
+    hostname: 'anidb.net',
+    path: 'http://anidb.net/perl-bin/animedb.pl?show=userpage&uid=' + User.id,
     headers: {
       'User-Agent': 'Opera/9.80 (Windows NT 6.2; WOW64) Presto/2.12.388 Version/12.16',
       'Accept': 'text/html, application/xml;q=0.9, application/xhtml+xml, image/png, image/webp, image/jpeg, image/gif, image/x-xbitmap, */*;q=0.1',
@@ -106,15 +144,23 @@ function sendRequestUser() {
       'Connection': 'Keep-Alive',
     }
   }
+  console.log('GET USER ' + User.id + ' INFO')
   http.request(options, getHtmlUser).end();
 }
 
-
+console.log('GET USER LIST ')
 animedb_user_list.find({
   d: false
+}).sort({
+  page: 1
 }).exec(function(err, docs) {
-  console.log('list q - ok')
+  console.log('GET USER LIST - COMPLETED')
   arUsers = docs;
   User = arUsers.shift()
-  sendRequest();
+  if (User) {
+    User['likes'] = {};
+    sendRequest();
+  } else {
+    console.log("######################   ALL USER DOWNLOAD   ######################")
+  }
 });
