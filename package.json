@@ -1,9 +1,8 @@
 {
-  "name": "aShop-app",
+  "name": "nodepars",
   "version": "0.0.1",
-  "description": "aShop",
+  "description": "nodepars",
   "dependencies": {
-    "xml2js": "0.4.1",
     "mongoose": "3.8.6",
     "zlib": "1.0.5"
   },

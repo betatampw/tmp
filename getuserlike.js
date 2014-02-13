@@ -50,7 +50,7 @@ function getHtml(response) {
       if (!/<ul class="g_list jump">[\s\S]*?next(?= selected)[\s\S]*?<\/ul>/i.test(html)) { // next page?
         console.log('GET USER NEXT PAGE LIKES')
         page = page + 1;
-        setTimeout(sendRequest, 1000)
+        setTimeout(sendRequest, 3000)
       } else {
         console.log('GET USER ' + User.id + ' LIKES DOWNLOAD')
         sendRequestUser()
@@ -64,7 +64,7 @@ function getHtml(response) {
         User['likes'] = {};
         console.log("GET NEXT USER");
         console.log("------------- REMAINING " + arUsers.length + " --------------");
-        setTimeout(sendRequest, 3000)
+        setTimeout(sendRequest, 6666)
       } else {
         console.log("######################   ALL USER DOWNLOAD   ######################")
       }
@@ -102,7 +102,7 @@ function getHtmlUser(response) {
       User['likes'] = {};
       console.log("GET NEXT USER");
       console.log("------------- REMAINING " + arUsers.length + " --------------");
-      setTimeout(sendRequest, 3000)
+      setTimeout(sendRequest, 6666)
     } else {
       console.log("######################   ALL USER DOWNLOAD   ######################")
     }
